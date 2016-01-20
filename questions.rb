@@ -72,7 +72,18 @@ class Questions
     Users.find_by_id(author_id.first['id'])
   end
 
-  
+  def replies
+    id_of_interest = QuestionsDatabase.instance.execute(<<-SQL, id)
+      SELECT
+        id
+      FROM
+        questions
+      WHERE
+        id = ?
+    SQL
+
+    Replies.find_by_question_id(id_of_interest.first['id'])
+  end
 
   attr_accessor :id, :title, :body, :associated_author_id
 
@@ -232,7 +243,6 @@ class Replies
       WHERE
         id = ?
     SQL
-
     Replies.new(result.first)
   end
 
@@ -267,7 +277,6 @@ class Replies
     Replies.new(result.first)
   end
 
-
   attr_accessor :id, :subject_question_id, :parent_reply_id, :author_id, :body
 
   def initialize(options = {})
@@ -277,6 +286,60 @@ class Replies
     @author_id = options['author_id']
     @body = options['body']
   end
+
+  def author
+    my_id = QuestionsDatabase.instance.execute(<<-SQL, author_id)
+      SELECT
+        author_id
+      FROM
+        replies
+      WHERE
+        author_id = ?
+    SQL
+
+    Users.find_by_id(my_id.first['author_id'])
+  end
+
+  def question
+    subject_id = QuestionsDatabase.instance.execute(<<-SQL, subject_question_id)
+      SELECT
+        subject_question_id
+      FROM
+        replies
+      WHERE
+        subject_question_id = ?
+    SQL
+
+    Questions.find_by_id(subject_id.first['subject_question_id'])
+  end
+
+  def parent_reply
+    parent_reply = QuestionsDatabase.instance.execute(<<-SQL, parent_reply_id)
+      SELECT
+        parent_reply_id
+      FROM
+        replies
+      WHERE
+        parent_reply_id = ?
+    SQL
+
+    Replies.find_by_id(parent_reply.first['parent_reply_id'])
+  end
+
+  def child_replies
+    child_reply = QuestionsDatabase.instance.execute(<<-SQL, id)
+      SELECT
+        id
+      FROM
+        replies
+      WHERE
+        parent_reply_id = ?
+    SQL
+
+    Replies.find_by_id(child_reply.first['id'])
+
+  end
+
 end
 
 
