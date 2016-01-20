@@ -46,7 +46,7 @@ class Questions
 
   def self.find_by_author_id(author_id)
 
-    QuestionsDatabase.instance.execute(<<-SQL, author_id)
+    result = QuestionsDatabase.instance.execute(<<-SQL, author_id)
       SELECT
         *
       FROM
@@ -55,7 +55,24 @@ class Questions
         id = ?
     SQL
 
+    Questions.new(result.first)
+
   end
+
+  def author
+    author_id = QuestionsDatabase.instance.execute(<<-SQL, associated_author_id)
+      SELECT
+        id
+      FROM
+        questions
+      WHERE
+        id = ?
+    SQL
+
+    Users.find_by_id(author_id.first['id'])
+  end
+
+  
 
   attr_accessor :id, :title, :body, :associated_author_id
 
@@ -85,6 +102,48 @@ class Users
         id = ?
     SQL
     Users.new(result.first)
+  end
+
+  def self.find_by_name(fname, lname)
+    result = QuestionsDatabase.instance.execute(<<-SQL, fname, lname)
+      SELECT
+        *
+      FROM
+        users
+      WHERE
+        fname = ? AND lname = ?
+    SQL
+    Users.new(result.first)
+  end
+
+  def authored_questions
+
+
+    poi_id = QuestionsDatabase.instance.execute(<<-SQL, fname, lname)
+      SELECT
+        id
+      FROM
+        users
+      WHERE
+        fname = ? AND lname = ?
+    SQL
+    Questions.find_by_author_id(poi_id.first['id'])
+  end
+
+  def authored_replies
+
+    replies = QuestionsDatabase.instance.execute(<<-SQL, fname, lname)
+      SELECT
+        id
+      FROM
+        users
+      WHERE
+        fname = ? AND lname = ?
+
+    SQL
+
+    Replies.find_by_id(replies.first['id'])
+
   end
 
   def self.create(fname, lname)
@@ -189,6 +248,23 @@ class Replies
 
     @id = QuestionsDatabase.instance.last_insert_row_id
     Replies.find_by_id(@id)
+  end
+
+  def self.find_by_user_id(user_id)
+      Replies.find_by_id(user_id)
+  end
+
+  def self.find_by_question_id(question_id)
+    result = QuestionsDatabase.instance.execute(<<-SQL, question_id)
+      SELECT
+        *
+      FROM
+        replies
+      WHERE
+        subject_question_id = ?
+    SQL
+
+    Replies.new(result.first)
   end
 
 
